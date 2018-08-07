@@ -1,0 +1,104 @@
+textarea {
+  resize: none;
+}
+
+.disabled {
+  cursor : default;
+}
+
+#alert {
+  display: none;
+}
+
+div.notif {
+  background : white;
+  display: none;
+  overflow: hidden;
+  border-radius: 8px;
+  position: fixed;
+  top : 65px;
+  right : 10px;
+  z-index: 1000;
+  font-size : 20px;
+  box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.4);
+  animation: notif-in 1.5s forwards;
+}
+
+div.notif .notif-icon {
+  color : #0984e3;
+  padding: 10px 12px;
+  border-right : 1px solid lightgrey;
+}
+
+div.notif .notif-body {
+  padding: 10px 12px;
+}
+
+.profile {
+  cursor: pointer;
+}
+
+div.loading {
+  background : rgba(0, 0, 0, 0.8);
+  color : white;
+  position: fixed;
+  top : 50%;
+  left : 50%;
+  transform: translate(-50%, -50%);
+  z-index: 500;
+  padding : 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.45);
+  display : none;
+}
+
+div.loading p {
+  margin : 0;
+}
+
+div.profile-pic {
+  width : 35px;
+  height: 35px;
+}
+
+@media (min-width : 1200px) and (max-width : 1920px) {
+  .card-columns {
+    -webkit-column-count: 4 !important;
+    column-count: 4 !important;
+  }
+}
+
+@media (max-width : 990px) {
+  div.notif {
+    right : 10px;
+    left : 10px;
+    top : 70px;
+  }
+
+  div.profile-pic {
+    width : 100%;
+    height: auto;
+  }
+}
+
+@media (max-width: 575px) {
+  div.pl-0 {
+    padding-left : 15px !important;
+  }
+
+  div.pr-0 {
+    padding-right : 15px !important;
+  }
+}
+
+@keyframes notif-in {
+  0% {
+    transform: translateY(-100%);
+  }
+  50% {
+    transform: translateY(0.1%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
