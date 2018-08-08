@@ -11,12 +11,14 @@ import Profile from './components/dashboard/Profile';
 import BuatSurat from './components/dashboard/BuatSurat';
 import ReviewSurat from './components/dashboard/ReviewSurat';
 import ScanQrcode from './components/dashboard/ScanQrcode';
+import Users from './components/dashboard/Users';
 
 import Popper from 'popper.js';
 import 'bootstrap/dist/js/bootstrap.bundle';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './assets/css/sb-admin.css';
 import './assets/css/font-awesome.css';
+import './App.css';
 import $ from 'jquery';
 import Redirect from 'react-router-dom/Redirect';
 window.jQuery = $;
@@ -57,6 +59,9 @@ class App extends Component {
 
   render() {
     const {loggedin, auth_user} = this.state;
+    // if (loggedin) {
+    //   return <Redirect to="/dashboard" />
+    // }
     return (
       <Fragment>
         <BrowserRouter>
@@ -68,9 +73,11 @@ class App extends Component {
             }/>
             <Route path="/dashboard" exact render={
               () => {
+                const user = JSON.parse(localStorage.getItem('auth'));
+                if (user.user_type === 'admin') return (<Redirect to="/dashboard/users" />)
                 return (loggedin) ? (
                 <Dashboard >
-                  <Sidebar user={auth_user}>
+                  <Sidebar user={user}>
                     <Content />
                   </Sidebar>
                 </Dashboard>
@@ -143,6 +150,18 @@ class App extends Component {
                     <ScanQrcode />
                   </Sidebar>
                 </Dashboard>)
+              }
+            } />
+            <Route path="/dashboard/users" render={
+              () => {
+                const user = JSON.parse(localStorage.getItem('auth'));
+                return (user.user_type === 'admin') ? (
+                  <Dashboard>
+                    <Sidebar user={user}>
+                      <Users />
+                    </Sidebar>                    
+                  </Dashboard>
+                ) : (<Redirect to="/dashboard" />)
               }
             } />
           </Switch>

@@ -118,10 +118,49 @@ app.get('/api/cek', (req, res) => {
 });
 
 app.put('/api/update_user', (req, res)=> {
-  if (!req.body.password) delete req.body.password;
+  if (!req.body.password) {
+    delete req.body.password;
+  } else {
+    req.body.password = crypto.createHash('md5').update(req.body.password).digest('hex');
+  }
+  
   const {id} = req.body;
   db.update('users', req.body, {id : id},(err, result) => {
     if (err) throw err;
+    res.json(result);
+  });
+});
+
+app.post('/api/buat_user/', (req, res) => {
+  req.body.password = crypto.createHash('md5').update(req.body.password).digest('hex');
+  db.insert('users', req.body, (err, result) => {
+    if (err) console.log(err);
+
+    res.json(result);
+  });
+});
+
+app.get('/api/get_user/:limit/:page', (req, res) => {
+  const {limit, page} = req.params;
+  let offset = (parseInt(page) - 1) * parseInt(limit);
+  db.get('users', (err, result) => {
+    if (err) console.log(result);
+    db.limit(parseInt(limit), offset).get('users', (error, users) => {
+      if (error) console.log(error);
+      res.json({
+        total : result.length,
+        total_halaman : Math.ceil(result.length/parseInt(limit)),
+        data : users
+      });
+    });
+  });
+});
+
+app.delete('/api/hapus_user/:id', (req, res) => {
+  const {id} = req.params;
+
+  db.delete('users', {id}, (err, result) => {
+    if (err) console.log(err);
     res.json(result);
   });
 });

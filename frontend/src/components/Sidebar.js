@@ -3,7 +3,7 @@ import moment from 'moment';
 import UserMenu from './UserMenu';
 import NotificationSKPD from './NotificationSKPD';
 import Notification from './Notification';
-import {Link} from 'react-router-dom';
+import {NavLink} from 'react-router-dom';
 import socket from '../modules/socket';
 import Req from '../modules/Req';
 import $ from 'jquery';
@@ -101,7 +101,7 @@ export default class Sidebar extends Component {
           </button>
           <div className="collapse navbar-collapse" id="navbar">
             <ul className="navbar-nav ml-auto">
-              { user_type == 'pimpinan' &&
+              { user_type === 'pimpinan' &&
                 <Fragment>
                   <Notification notifCheck={this.notifCheck} notif={this.state.notif}/>
                 </Fragment>
@@ -115,29 +115,36 @@ export default class Sidebar extends Component {
               <UserMenu />
             </ul>
             <ul className="navbar-nav navbar-sidenav" id="exampleAccordion">
-              <li className="nav-item">
-                <Link to="/dashboard" className="nav-link" data-toggle="tooltip" data-placement="right" data-original-title="Dashboard">
+              {user_type !== 'admin' && <li className="nav-item">
+                <NavLink exact to="/dashboard" className="nav-link" data-toggle="tooltip" data-placement="right" data-original-title="Dashboard">
                   <i className="fa fa-dashboard fa-lg"></i>&nbsp;
                   <span className="nav-link-text">Dashboard</span>
-                </Link>
-              </li>
-              {skpd != null &&
+                </NavLink>
+              </li>}
+              {skpd !== null && user_type !== 'admin' &&
                 (<li className="nav-item">              
-                <Link  className="nav-link" to="/dashboard/surat/buat">
+                <NavLink exact className="nav-link" to="/dashboard/surat/buat">
                   <i className="fa fa-envelope-o fa-lg"></i>&nbsp;
                   Buat surat
-                </Link>
+                </NavLink>
                 </li>)
               }
-              <li className="nav-item">
+              {user_type !== 'admin' && <li className="nav-item">
                 <a href="javascript:void(0)" className="nav-link nav-link-collapse collapsed" data-toggle="collapse" href="#surat" data-parent="#exampleAccordion">
                   <span className="nav-link-text"><i className="fa fa-envelope fa-lg"></i>&nbsp;Surat</span>
                 </a>
                 <ul className="sidenav-second-level collapse" id="surat">
-                  <li><Link to="/dashboard/surat/approved"><i className="fa fa-check-square fa-sm"></i>&nbsp;Approve</Link></li>
-                  <li><Link to="/dashboard/surat/pending"><i className="fa fa-times fa-sm"></i>&nbsp;Pending</Link></li>
+                  <li><NavLink to="/dashboard/surat/approved"><i className="fa fa-check-square fa-sm"></i>&nbsp;Approve</NavLink></li>
+                  <li><NavLink to="/dashboard/surat/pending"><i className="fa fa-times fa-sm"></i>&nbsp;Pending</NavLink></li>
                 </ul>
-              </li>
+              </li>}
+              { user_type === 'admin' && 
+                <li className="nav-item">
+                  <NavLink className="nav-link" to="/dashboard/users">
+                    <i className="fa fa-user-circle-o fa-lg"></i>&nbsp;Users
+                  </NavLink>
+                </li>
+              }
             </ul>
           </div>
         </nav>
