@@ -47,6 +47,7 @@ export default class BuatSurat extends Component {
     for (let i = 0; i < image.length; i++) {
       if (file_surat.type.match(image[i])) compatible = true;
     }
+    
     if (compatible === true)
     {
       this.setState({

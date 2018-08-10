@@ -47,7 +47,7 @@ export default class Notification extends Component {
         <li className="nav-item dropdown">
           <a href="javascript:void(0)" data-toggle="dropdown" className="nav-link dropdown-toggle" id="notification">
             <i className="fa fa-envelope fa-lg"></i>
-            <span className="indicator text-danger d-none d-lg-block"><i className="fa fa-fw fa-circle"></i></span>
+            {false && <span className="indicator text-danger d-none d-lg-block"><i className="fa fa-fw fa-circle"></i></span>}
           </a>
           <div className="dropdown-menu dropdown-menu-right">
             <h6 className="dropdown-header">Surat baru :</h6>

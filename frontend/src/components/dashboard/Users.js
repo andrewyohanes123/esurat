@@ -25,6 +25,7 @@ export default class Users extends Component {
     this.getUsers = this.getUsers.bind(this);
     this.submit = this.submit.bind(this);
     this.updateUser = this.updateUser.bind(this);
+    this.deleteUser = this.deleteUser.bind(this);
   }
 
   componentDidMount = () => {
@@ -42,12 +43,20 @@ export default class Users extends Component {
   }
 
   getUsers = () => {
-    const {limit, page} = this.state; 
+    const {limit, page, users, total_halaman} = this.state; 
     Req.get(`/api/get_user/${limit}/${page}`).then(resp => {
       this.setState({
         users : resp.data.data,
         total_halaman : resp.data.total_halaman,
         total_user : resp.data.total
+      }, () => {
+        if (page > 1 && resp.data.data.length === 0) {
+          this.setState({
+            page : page - 1
+          }, () => {
+            this.getUsers();
+          })
+        }
       });
     });
   }
@@ -57,7 +66,7 @@ export default class Users extends Component {
     let valid = false;
     const {nama_depan, nama_belakang, username, password, skpd, jabatan, user_type} = this.state
     const data = {nama_depan, nama_belakang, username, password, skpd, jabatan, user_type};
-    // valid = data.map((prop, key) => {return !!prop});
+
     const input = jquery('input.form-control');
     for (let i = 0; i < input.length; i++) {
       if (!input[i].value && input[i].name !== 'skpd' ) {
@@ -124,6 +133,14 @@ export default class Users extends Component {
         }
       })
     }
+  }
+
+  deleteUser = (id) => {
+    Req.delete(`/api/hapus_user/${id}`).then(resp => {
+      if (resp.data.affectedRows > 0) {
+        this.getUsers();
+      }
+    })
   }
 
   render() {
@@ -218,7 +235,11 @@ export default class Users extends Component {
                                         ...user, edit_mode : true
                                       })
                                     }} className="btn btn-outline-warning btn-sm"><i className="fa fa-edit fa-sm"></i></button>
-                                    <button className="btn btn-outline-danger btn-sm"><i className="fa fa-trash fa-sm"></i></button>
+                                    <button onClick={
+                                      () => {
+                                        this.deleteUser(user.id);
+                                      }
+                                    } className="btn btn-outline-danger btn-sm"><i className="fa fa-trash fa-sm"></i></button>
                                   </div>
                                 </td>
                               </tr>

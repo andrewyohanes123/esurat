@@ -22,7 +22,7 @@ export default class NotificationSKPD extends Component {
       <React.Fragment key={item.id}>
         <Link to={`/dashboard/surat/review/${item.id}`} className="dropdown-item">
           <strong>{item.nama_depan} {item.nama_belakang} menerima surat</strong>
-          <span className="float-right small text-muted">{ moment(item.tanggal).fromNow() }</span>
+          <span className="float-right small text-muted">{ moment(item.tanggal_approved).format('DD MMM YYYY') }</span>
           <div className="dropdown-message small">{item.subjek}</div>
         </Link>
         <div className="dropdown-divider m-0"></div>

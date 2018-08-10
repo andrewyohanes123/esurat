@@ -14,11 +14,13 @@ export default class Pending extends Component {
       limit : 12,
       current_page : 1,
       user : JSON.parse(localStorage.getItem('auth')),
-      total_halaman : 1
+      total_halaman : 1,
+      query : ''
     }
     this.getSurat = this.getSurat.bind(this);
     this.scroll = this.scroll.bind(this);
     this.removeSurat = this.removeSurat.bind(this);
+    this.onChange = this.onChange.bind(this);
   }
 
   componentWillMount = () => {
@@ -43,11 +45,20 @@ export default class Pending extends Component {
     }
   }
 
+  onChange = (ev) => {
+    this.setState({ [ev.target.name] : ev.target.value }, () => {
+      this.getSurat();
+    })
+  }
+
   getSurat() {
-    const {user, limit, current_page, surat} = this.state;
+    const {user, limit, current_page, surat, query} = this.state;
     Req.get(`/api/get_surat_pending/${user.id}/${user.user_type}/${current_page}/${limit}`, {
       headers : {
         'x-access-token' : localStorage.getItem('x-access-token')
+      },
+      params : {
+        q : query
       }
     }).then(resp => {
       if (current_page > 1) {
@@ -83,7 +94,7 @@ export default class Pending extends Component {
     } else if (this.state.user.user_type === 'skpd') {
       socket.on('approve surat', (msg) => this.getSurat());
     }
-    const {total_halaman, current_page, limit} = this.state;
+    const {total_halaman, current_page, limit, query} = this.state;
     const halaman = (total_halaman > 1) ? (((current_page + 3) < total_halaman) ? (current_page + 3) : total_halaman) : 1;
     return (
       <div className="container-fluid">
@@ -95,10 +106,10 @@ export default class Pending extends Component {
         <div className="card m-2">
           <div className="card-header">
             <div className="row">
-              <div className="col-sm-8 mb-0 text-muted"><i className="fa fa-check-square fa-lg"></i> Approve</div>
+              <div className="col-sm-8 mb-0 text-muted"><i className="fa fa-times fa-lg"></i> Pending</div>
               <div className="col-sm-4">
                 <div className="input-group input-group-sm">
-                  <input type="text" className="form-control" placeholder="Cari surat"/>
+                  <input type="text" value={query} onChange={this.onChange} name="query" className="form-control" placeholder="Cari surat"/>
                   <div className="input-group-append"><button className="btn btn-success"><i className="fa fa-search fa-lg"></i>&nbsp;Cari</button></div>
                 </div>
               </div>
@@ -109,7 +120,9 @@ export default class Pending extends Component {
               (this.state.surat.length > 0) ?
               <PendingTable removeSurat={this.removeSurat} data={this.state.surat} />
                :
-              <p className="text-center text-muted mb-0">Tidak ada surat pending</p>
+              <p className="text-center text-muted mb-0">{
+                !query ? `Tidak ada surat pending` : `Surat yang dicari tidak ada. key : ${query}`
+              }</p>
             }
           </div>
           <div className="card-footer">

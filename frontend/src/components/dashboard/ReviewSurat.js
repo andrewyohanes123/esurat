@@ -51,7 +51,7 @@ export default class ReviewSurat extends Component {
   }
 
   approveSurat = () => {
-    // $('#loading').fadeIn();
+    $('#loading').fadeIn();
     const {subjek, file_surat, id} = this.state.surat;
     const approved_by = JSON.parse(localStorage.getItem('auth')).id;
     window.tracking.ColorTracker.registerColor('black', (r, g,b) => {
@@ -150,7 +150,17 @@ export default class ReviewSurat extends Component {
               <img src={
                 (surat.approved === 1) ? `${imgAPI}${surat.approved_file_surat}` :
                 `${imgAPI}${surat.file_surat}`
-                } title={surat.subjek} id="img" className="card-img rounded-0 border-right"/>
+                }
+                onError={(err) => {
+                  const img = document.getElementById('img');
+                  img.src = `${imgAPI}loading.png`;
+                  $('#loading').fadeIn();
+                  setTimeout(() => {
+                    img.src = `${imgAPI}${surat.approved_file_surat}`;
+                    $('#loading').fadeOut();
+                  }, 5000);
+                }}
+                 title={surat.subjek} id="img" className="card-img rounded-0 border-right"/>
             </div>
             <div className="col-sm-3 pl-0">
               <div className="card-body m-0 p-1 pl-2 position-relative">

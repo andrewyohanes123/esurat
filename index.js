@@ -43,12 +43,11 @@ app.get('/', (req, res) => {
 });
 
 app.get('/test', async (req, res) => {  
-  const pic = path.join(__dirname, 'upload/b997e0ff5c8521cf8b892fb6790b2a67.suratcontoh.png');
+  const pic = path.join(__dirname, 'upload/8a0bf99db8e8eb49135fd9e684058fca.surat-tugas-visitasi-tahap-2.jpg');
   const ttd = path.join(__dirname, 'ttd/ttd2.jpg');
   const dim = await imgSize(pic);
   const ttdSize = await imgSize(ttd);
   const resizePic = await merge(pic)
-  .resize(track.img.width, track.img.height)
   .toBuffer()
 
   const pic1 = await merge(resizePic)
@@ -67,21 +66,23 @@ app.get('/test', async (req, res) => {
   .overlayWith(sign, {
     top : 590,
     left : 101
-  }).toFile(path.join(__dirname, 'upload/test.png'))
-
-  await res.sendFile(path.join(__dirname, 'upload/test.png'));
+  })
+  .jpeg({
+    quality : 100,
+    chromaSubsampling : '4:4:4'
+  })
+  .toFile(path.join(__dirname, 'upload/tests2.jpeg'))
+  .then(info => {
+    res.sendFile(path.join(__dirname, 'upload/verified-8a0bf99db8e8eb49135fd9e684058fca.surat-tugas-visitasi-tahap-2.jpg.png'));
+  })
 });
-
-app.get('/pix', (req, res) =>{
-  const data = pixel(path.join(__dirname, 'upload/df37f5303a32e434e35fa1bd12bc1296.138277444-suratpeminjamansofamipa-1-638.jpg'));
-  res.json(data);
-})
 
 app.post('/api/login', function(req, res){
   req.body.password = crypto.createHash('md5').update(req.body.password).digest('hex');
   db.select('id, foto_profil, username, jabatan, skpd,nama_depan, nama_belakang, user_type').where(req.body).get('users', (err, result) => {
     if (err) throw err;
     var tkn = (result.length) ? token.sign({
+      id : result[0].id,
       username : result[0].username,
       password : result[0].password
     }, token_secret) : '';
@@ -114,7 +115,12 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/cek', (req, res) => {
-  res.json(req.session.user);
+  const tkn = req.headers['x-access-token'];
+  const {id, username} = token.decode(tkn);
+  db.where({ id, username}).get('users', (err, result) => {
+    if (err) console.log(err);
+    res.json(result);
+  });
 });
 
 app.put('/api/update_user', (req, res)=> {
@@ -219,7 +225,7 @@ app.get('/api/cek_notifikasi', (req, res) => {
 });
 
 app.get('/api/cek_notifikasi_skpd/:id', (req, res) => {
-  db.select('subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, approved_by')
+  db.select('subjek, surat.id, tanggal, tanggal_approved,users.nama_depan, users.nama_belakang, approved_by')
   .join('users', 'approved_by = users.id')
   .where({'approved' : 1, 'surat.user_id' : req.params.id})
   .limit(5)
@@ -289,7 +295,7 @@ app.post('/api/approve_surat/', (req, res) => {
     const date = new Date().toISOString();
     const tanggal_approved = `${date.split('T')[0]} ${date.split('T')[1].split('.')[0]}`;
     const approved_surat = {
-      approved_file_surat : `verified-${file_surat}.png`,
+      approved_file_surat : `verified-${file_surat}.jpeg`,
       approved : 1,
       dibaca : 1,
       approved_by,
@@ -333,12 +339,16 @@ app.post('/api/approve_surat/', (req, res) => {
       }).toBuffer();
       
 
-      await merge(pic2)
+       await merge(pic2)
       .overlayWith(path.join(__dirname, `qrcode/qrcode2.png`), {
         top,
         left
       })
-      .toFile(path.join(__dirname, `upload/verified-${file_surat}.png`), (err, info) => {
+      .jpeg({
+        quality : 100,
+        chromaSubsampling : '4:4:4'
+      })
+      .toFile(path.join(__dirname, `upload/verified-${file_surat}.jpeg`), (err, info) => {
         if (err) console.log(`Error sharp : ${err}`);
       });
 
@@ -354,6 +364,7 @@ app.post('/api/approve_surat/', (req, res) => {
 
 app.get('/api/get_approved_surat/:id/:type/:page/:limit', (req, res) => {
   const {page, type, limit, id} = req.params;
+  const {q} = req.query;
   let total = 1;
   let offset = (parseInt(page) - 1) *  (parseInt(limit));
   if (type == 'pimpinan') {
@@ -361,6 +372,7 @@ app.get('/api/get_approved_surat/:id/:type/:page/:limit', (req, res) => {
       total = (result) ? result.length : 0;
       db.select('deskripsi, approved_file_surat, file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
       .join('users', 'user_id = users.id')
+      .like('subjek', q, 'both')
       .where({'approved': 1})
       .limit(parseInt(limit), offset)
       .order_by('surat.id', 'desc')
@@ -378,6 +390,7 @@ app.get('/api/get_approved_surat/:id/:type/:page/:limit', (req, res) => {
       if (err) console.log(err); 
       db.select('deskripsi, approved_file_surat, file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
       .join('users', 'user_id = users.id')
+      .like('subjek', q, 'both')
       .where({'user_id' : id , approved : 1})
       .limit(parseInt(limit), offset)
       .order_by('surat.id', 'desc')
@@ -394,6 +407,7 @@ app.get('/api/get_approved_surat/:id/:type/:page/:limit', (req, res) => {
 
 app.get('/api/get_surat_pending/:id/:type/:page/:limit', (req, res) => {
   const {page, type, limit, id} = req.params;
+  const {q} = req.query;
   let total = 1;
   let offset = (parseInt(page) - 1) *  (parseInt(limit));
   if (type == 'pimpinan') {
@@ -401,6 +415,7 @@ app.get('/api/get_surat_pending/:id/:type/:page/:limit', (req, res) => {
       total = (result) ? result.length : 0;      
       db.select('deskripsi, approved_file_surat, file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
       .join('users', 'user_id = users.id')
+      .like('subjek', q, 'both')
       .where({'approved': 0})
       .limit(parseInt(limit), offset)
       .order_by('surat.id', 'desc')
@@ -417,7 +432,8 @@ app.get('/api/get_surat_pending/:id/:type/:page/:limit', (req, res) => {
       total = (result) ? result.length : 0;
       db.select('deskripsi, approved_file_surat, file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
       .join('users', 'user_id = users.id')
-      .where({'users.id' : id , approved : 0})
+      .like('subjek', q, 'both')
+      .where({'users.id' : id , approved : 0})      
       .limit(parseInt(limit), offset)
       .order_by('surat.id', 'desc')
       .get('surat', (err, result) => {

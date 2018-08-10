@@ -20,29 +20,6 @@ export default class Content extends Component {
 
   componentDidMount = () => {
     this.getJlhSurat();
-    const ctx = jquery('#chart');
-    const chart = new Chart(ctx, {
-      type : 'bar',
-      data : {
-        labels : ['A', 'B', 'C', 'D', 'E', 'F', 'H'],
-        datasets : [{
-          label : "Contoh",
-          data : [44, 5,10, 55,9,11, 66],
-          backgroundColor : 'rgba(0, 184, 148,0.3)',
-          borderColor : 'rgba(0, 184, 148,0.81)'
-        },
-        {
-          label : "Contoh",
-          data : [44, 5,10, 55,9,11, 66].reverse(),
-          backgroundColor : 'rgba(214, 48, 49,0.3)',
-          borderColor : 'rgba(214, 48, 49,0.81)'
-        }
-      ]
-      }
-    })
-    this.setState({
-      chart
-    })
   }
 
   getJlhSurat = () => {
@@ -102,10 +79,6 @@ export default class Content extends Component {
             {/*  */}
             <div className="col-md-6">
               
-            </div>
-            <div className="col-md-12">
-              <h4><i className="fa fa-bar-chart fa-lg"></i>&nbsp;Statistik surat</h4>
-              <canvas width="400" height="100" id="chart"></canvas>
             </div>
           </div>
         </div>
