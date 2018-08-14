@@ -23,6 +23,7 @@ export default class BuatSurat extends Component {
     this.onChange = this.onChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
     this.getFile = this.getFile.bind(this);
+    this.fileChange = this.fileChange.bind(this);
   }
 
   onChange (ev) {
@@ -41,13 +42,15 @@ export default class BuatSurat extends Component {
   }
 
   getFile(ev) {
-    let file_surat = ev.target.files[0];
+    let file_surat = ev.target.files;
     const image = ['png', 'jpeg', 'jpg', 'bmp'];
     let compatible = false;
-    for (let i = 0; i < image.length; i++) {
-      if (file_surat.type.match(image[i])) compatible = true;
+    for (let i = 0; i < file_surat.length; i++) {
+      for (let j = 0; j < image.length; j++) {
+        if (file_surat[i].type.match(image[j])) compatible = true;
+      }
     }
-    
+
     if (compatible === true)
     {
       this.setState({
@@ -63,52 +66,66 @@ export default class BuatSurat extends Component {
     }
   }
 
+  fileChange = files => {
+    this.setState({ file_surat : files });
+  }
+
   onSubmit = (ev) => {
     ev.preventDefault();
     const formData = new FormData();
     const {nomor_surat, subjek, tujuan, deskripsi, file_surat, skpd, user_id} = this.state;
     const user = JSON.parse(localStorage.getItem('auth'));
-    formData.append('nomor_surat', nomor_surat);
-    formData.append('subjek', subjek);
-    formData.append('tujuan', tujuan);
-    formData.append('deskripsi', deskripsi);
-    formData.append('file_surat', file_surat);
-    formData.append('skpd', skpd);
-    formData.append('user_id', user_id);
     let input = $('input.form-control[type="text"]');
+    let upload = null;
     const fileInput = document.querySelector('input[type="file"]');
     for (let i = 0; i < input.length; i++) {
       if (!input[i].value) {
         input[i].className += " is-invalid";
       }
     }
-    if (!!input[0].value && !!input[1].value && !!input[2].value && !fileInput.files.length)
+    if (!!input[0].value && !!input[1].value && !!input[2].value && file_surat.length === 0)
     {
-      this.fileSurat.click();
+      // this.fileSurat.click();
+      console.log('kurang')
     }
     else if (!!input[0].value && !!input[1].value && !!input[2].value) {
-      Req.post('/api/buat_surat', formData, {
-        headers: {
-          'x-access-token' : localStorage.getItem('x-access-token')
-        }
-      }).then((resp) => {
-        if (resp.data.affectedRows) 
-        {
-          this.setState({
-            nomor_surat : "",
-            subjek : "",
-            file_surat : "",
-            skpd : JSON.parse(localStorage.getItem('auth')).skpd,
-            user_id : JSON.parse(localStorage.getItem('auth')).id,
-            tujuan : "",
-            deskripsi : ""
-          });
-          $('input.form-control').removeClass("is-invalid is-valid");
-          document.querySelector('input[type="file"]').value = "";
-          socket.emit('surat baru', user);
-        }
-      });
+      // upload = file_surat.map(file => {
+        formData.append('nomor_surat', nomor_surat);
+        formData.append('subjek', subjek);
+        formData.append('tujuan', tujuan);
+        formData.append('deskripsi', deskripsi);
+        for (let i = 0; i < file_surat.length; i++) {
+          formData.append('file_surat', file_surat[i]);
+        }        
+        formData.append('skpd', skpd);
+        formData.append('user_id', user_id);
+        Req.post('/api/buat_surat', formData, {
+          headers: {
+            'x-access-token' : localStorage.getItem('x-access-token')
+          }
+        }).then((resp) => {
+          if (resp.data.affectedRows) 
+          {
+            this.setState({
+              nomor_surat : "",
+              subjek : "",
+              file_surat : "",
+              skpd : JSON.parse(localStorage.getItem('auth')).skpd,
+              user_id : JSON.parse(localStorage.getItem('auth')).id,
+              tujuan : "",
+              deskripsi : ""
+            });
+            $('input.form-control').removeClass("is-invalid is-valid");
+            document.querySelector('input[type="file"]').value = "";
+            socket.emit('surat baru', user);
+          }
+        });
+      // });
     }
+
+    // Req.all(upload).then(resp => {
+    //   console.log(resp.data);
+    // })
   }
 
   render() {    
@@ -137,7 +154,10 @@ export default class BuatSurat extends Component {
                   <label htmlFor="" className="control-label">Tujuan</label>
                   <input type="text" placeholder="Tujuan surat" name="tujuan" value={tujuan} onChange={this.onChange} className="form-control"/>
                   <label htmlFor="" className="control-label">File surat</label>
-                  <input type="file" name="file_surat" id="" onChange={this.getFile} ref={(fileSurat) => { this.fileSurat = fileSurat }} className="form-control"/>
+                  <div className="custom-file">
+                    <input accept="image/*" multiple={true} type="file" id="file_surat" className="custom-file-input" ref={fileInput => {this.fileInput = fileInput}} onChange={this.getFile} name="file_surat" />
+                    <label htmlFor="file_surat" className="custom-file-label">{ file_surat.length ? `${file_surat.length} gambar` : `Pilih gambar`}</label>
+                  </div>
                   <div className="invalid-feedback"><i className="fa fa-exclamation-circle fa-lg"></i>&nbsp;Pilih file pilih atau file gambar yang valid</div>
                   <label htmlFor="" className="control-label">Deskripsi</label>
                   <textarea placeholder="Subjek surat" name="deskripsi" value={deskripsi} onChange={this.onChange} className="form-control"/>

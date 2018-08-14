@@ -10,6 +10,10 @@ textarea {
   display: none;
 }
 
+div.card-img-overlay {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent);
+}
+
 div.notif {
   background : white;
   display: none;
@@ -63,8 +67,8 @@ div.profile-pic {
 
 @media (min-width : 1200px) and (max-width : 1920px) {
   .card-columns {
-    -webkit-column-count: 4 !important;
-    column-count: 4 !important;
+    -webkit-column-count: 3 !important;
+    column-count: 3 !important;
   }
 }
 

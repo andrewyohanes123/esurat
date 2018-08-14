@@ -19,19 +19,20 @@ export default class ApprovedTable extends Component {
               this.props.removeSurat(surat.id);
             }} className="btn position-absolute btn-danger btn-sm" style={{
               right : 10,
-              top : 10
+              top : 10,
+              zIndex : 200
             }} ><i className="fa fa-trash fa-sm"></i></button>}
           <img src={
             (surat.approved === 0) ?
-            `${imgAPI}${surat.file_surat}` :
+            `${imgAPI}file_surat/${surat.file_surat}` :
             `${imgAPI}${surat.approved_file_surat}`
             } alt={surat.file_surat} className="card-img-top"/>
-          <div className="card-body">
-            <h6 className="card-title mb-0"><Link to={`/dashboard/surat/review/${surat.id}`}>{surat.subjek}</Link></h6>
+          <div className="card-img-overlay text-white">
+            <h5 className="card-title mb-0"><Link className="text-white" to={`/dashboard/surat/review/${surat.id}`}>{surat.subjek}</Link></h5>
             <hr className="m-0 p-0"/>
             <p className="small mt-0">{surat.nama_depan} {surat.nama_belakang}</p>
           </div>
-          <div className="card-footer small text-muted">{ moment(surat.tanggal).fromNow() }</div>
+          <div className="card-footer small text-muted">{ moment(Date()).isAfter(surat.tanggal, 'day') ? moment(surat.tanggal).format('dddd, Do MMMM YYYY') : moment(surat.tanggal).fromNow() }</div>
         </div>
       )
     });

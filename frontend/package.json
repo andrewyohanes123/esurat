@@ -13,6 +13,7 @@
     "popper.js": "^1.14.3",
     "react": "^16.4.1",
     "react-dom": "^16.4.1",
+    "react-dropzone": "^4.3.0",
     "react-file-base64": "^1.0.3",
     "react-qr-reader": "^2.1.0",
     "react-router": "^4.3.1",

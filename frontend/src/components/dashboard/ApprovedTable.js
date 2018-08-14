@@ -13,18 +13,18 @@ export default class ApprovedTable extends Component {
     moment.locale('id');
     const surat = this.props.data.map((surat, index) => {
       return (
-        <div key={index} className="card border-primary">
+        <div key={index} className="card border-primary text-white">
           <img src={
             (surat.approved === 0) ?
             `${imgAPI}${surat.file_surat}` :
-            `${imgAPI}${surat.approved_file_surat}`
+            `${imgAPI}approved_file/${surat.approved_file}`
             } alt={surat.file_surat} className="card-img-top"/>
-          <div className="card-body">
-            <h6 className="card-title mb-0"><Link to={`/dashboard/surat/review/${surat.id}`}>{surat.subjek}</Link></h6>
+          <div className="card-img-overlay">
+            <h5 className="card-title mb-0"><Link className="text-white" to={`/dashboard/surat/review/${surat.id}`}>{surat.subjek}</Link></h5>
             <hr className="m-0 p-0"/>
-            <p className="small mt-0">{surat.nama_depan} {surat.nama_belakang}</p>
+            <p className="small mt-0 card-title">{surat.nama_depan} {surat.nama_belakang}</p>
           </div>
-          <div className="card-footer small text-muted">{ moment(surat.tanggal).fromNow() }</div>
+          <div className="card-footer small text-muted">{ moment(Date()).isAfter(surat.tanggal, 'day') ? moment(surat.tanggal).format('dddd, Do MMMM YYYY') : moment(surat.tanggal).fromNow() }</div>
         </div>
       )
     });
