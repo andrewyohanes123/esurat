@@ -194,6 +194,9 @@ app.put('/api/update_profil', upload.single('foto_profil'), (req, res) => {
 app.post('/api/buat_surat', upload.array('file_surat'), (req, res) => {
   // req.body.file_surat = req.files;
   // res.json(req.files);
+  req.body.approved = 0;
+  req.body.approved_by = 0;
+  req.body.dibaca = 0;
 
   db.insert('surat', req.body, (err, result) => {
     if (err) return console.log(err);
