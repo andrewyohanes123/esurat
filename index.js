@@ -23,14 +23,25 @@ let token_secret = 'iy98hcbh489n38984y4h498';
 const port = 8080;
 
 const storage = multer.diskStorage({
-  destination : './upload',
+  destination : './upload/file_surat',
   filename(req, file, cb) {
-    cb(null, `${crypto.createHash('md5').update(file.originalname).digest('hex')}.${file.originalname}`);
+    cb(null, `${crypto.createHash('md5').update(`${file.originalname}-${Date.now()}`).digest('hex')}${path.extname(file.originalname)}`);
+  }
+});
+
+const profileStorage = multer.diskStorage({
+  destination : './upload/foto_profil',
+  filename(req, file, cb) {
+    cb(null, `${crypto.createHash('md5').update(`${file.originalname}-${Date.now()}`).digest('hex')}${path.extname(file.originalname)}`);
   }
 });
 
 const upload = multer({
   storage
+});
+
+const profile = multer({
+  storage : profileStorage
 });
 
 app.use(bodyParser.json());
@@ -180,11 +191,24 @@ app.put('/api/update_profil', upload.single('foto_profil'), (req, res) => {
   });
 })
 
-app.post('/api/buat_surat', upload.single('file_surat'), (req, res) => {
-  req.body.file_surat = req.file.filename;
-  db.insert('surat', req.body, (err, result) => {
-    if (err) throw err;
+app.post('/api/buat_surat', upload.array('file_surat'), (req, res) => {
+  // req.body.file_surat = req.files;
+  // res.json(req.files);
 
+  db.insert('surat', req.body, (err, result) => {
+    if (err) return console.log(err);
+    let files = [];
+    for (i in req.files) {
+      files.push({
+        'file_surat.file_surat' : req.files[i].filename,
+        id_surat : result.insertId
+      });
+    }
+    
+    db.insert_batch('file_surat', files, (err, results) => {
+      if (err) return console.log(err);
+      console.log(results.insert_id);
+    });
     res.json(result);
   });
 });
@@ -272,19 +296,21 @@ app.get('/api/get_profile/:id', (req, res) => {
 });
 
 app.get('/api/get_surat_by_id/:id', (req, res) => {
-  db.select('nomor_surat, deskripsi, approved_file_surat, file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.username, users.nama_depan, users.nama_belakang, users.foto_profil')
+  db.select('nomor_surat, deskripsi, file_surat.approved_file, file_surat.file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.username, users.nama_depan, users.nama_belakang, users.foto_profil')
   .join('users', 'surat.user_id = users.id')
+  .join('file_surat', 'surat.id = file_surat.id_surat')
   .where({'surat.id' : req.params.id})
+  .order_by('file_surat.id', 'desc')
   .get('surat', (err, result) => {
     if (err) throw err;
-    (result.length) ? res.json(result[0]) : res.status(404).json({msg : 'Surat tidak ada'});
+    (result.length) ? res.json(result) : res.status(404).json({msg : 'Surat tidak ada'});
   });
 });
 
 app.post('/api/approve_surat/', (req, res) => {
   // let qr = '';
-  const {subjek, file_surat,id, approved_by, track} = req.body;
-  const pic = path.join(__dirname, `upload/${file_surat}`);
+  const {subjek,id, approved_by, track} = req.body;
+  // const pic = path.join(__dirname, `upload/${file_surat}`);
   
   qrcode.toFile(path.join(__dirname, `qrcode/qrcode.png`), id + '',{
     rendererOpts : {
@@ -295,68 +321,84 @@ app.post('/api/approve_surat/', (req, res) => {
     const date = new Date().toISOString();
     const tanggal_approved = `${date.split('T')[0]} ${date.split('T')[1].split('.')[0]}`;
     const approved_surat = {
-      approved_file_surat : `verified-${file_surat}.jpeg`,
       approved : 1,
       dibaca : 1,
       approved_by,
       tanggal_approved
     };
-    imgSize(pic, async (err, dimensions) => {
-      if (err) throw err;
-      const qrHeight = Math.round(dimensions.height / (100/15));
-      const qrWidth = qrHeight;
-      const backHeight = Math.round(dimensions.height / (100/track.height));
-      const backWidth = Math.round(dimensions.width / (100/track.width)) + 10;
-      const signDimensions = await imgSize(path.join(__dirname, 'ttd/ttd.png'));
-      const signWidth = Math.round(dimensions.width / (100/30));
-      const signHeight = Math.round(signDimensions.height * (signWidth/signDimensions.width));
-      await merge(path.join(__dirname, 'qrcode/qrcode.png')).resize(qrHeight, qrWidth)
-      .toFile(path.join(__dirname, `qrcode/qrcode2.png`));
-
-      await merge(path.join(__dirname, 'ttd/backdrop.jpg'))
-      .resize(backWidth, backHeight)
-      .toFile(path.join(__dirname, `ttd/backdrop.png`));
-
-      await merge(path.join(__dirname, `ttd/ttd.png`))
-      .resize(signWidth, signHeight)
-      // .toBuffer()
-      .toFile(path.join(__dirname, 'ttd/ttd2.png'))
-
-      const top = (dimensions.height - (5 + qrHeight));
-      const left = (dimensions.width - (5 + qrWidth));
-      
-      const pic1 = await merge(path.join(__dirname, `upload/${file_surat}`))
-      .overlayWith(path.join(__dirname, 'ttd/backdrop.png'), {
-        top : Math.round(dimensions.height / (100/track.y)),
-        left : Math.round(dimensions.width / (100/track.x + 2))
-      }).toBuffer();
-
-      const pic2 = await merge(pic1)
-      .overlayWith(path.join(__dirname, 'ttd/ttd2.png'), {
-        // .overlayWith(ttd, {
-        top : Math.round(dimensions.height / (100/track.y)),
-        left : Math.round(dimensions.width / (100/track.x))
-      }).toBuffer();
-      
-
-       await merge(pic2)
-      .overlayWith(path.join(__dirname, `qrcode/qrcode2.png`), {
-        top,
-        left
-      })
-      .jpeg({
-        quality : 100,
-        chromaSubsampling : '4:4:4'
-      })
-      .toFile(path.join(__dirname, `upload/verified-${file_surat}.jpeg`), (err, info) => {
-        if (err) console.log(`Error sharp : ${err}`);
-      });
-
-      await db.update('surat', approved_surat, {id}, (err, result) => {
+    for (let i = 0; i < track.length; i++) {
+      const img = path.join(__dirname, `upload/file_surat/${track[i].target}`);
+      imgSize(img, async (err, dimensions) => {
         if (err) throw err;
         
-        res.json(result);
+        if (track[i].x !== 0 && track[i].y !== 0 && track[i].width !== 0 && track[i].height !== 0) {
+          const qrHeight = Math.round(dimensions.height / (100/15));
+          const qrWidth = qrHeight;
+          const backHeight = Math.round(dimensions.height / (100/track[i].height));
+          const backWidth = Math.round(dimensions.width / (100/track[i].width)) + 10;
+          const signDimensions = await imgSize(path.join(__dirname, 'ttd/ttd.png'));
+          const signWidth = Math.round(dimensions.width / (100/30));
+          const signHeight = Math.round(signDimensions.height * (signWidth/signDimensions.width));
+          await merge(path.join(__dirname, 'qrcode/qrcode.png')).resize(qrHeight, qrWidth)
+          .toFile(path.join(__dirname, `qrcode/qrcode2.png`));
+
+          await merge(path.join(__dirname, 'ttd/backdrop.jpg'))
+          .resize(backWidth, backHeight)
+          .toFile(path.join(__dirname, `ttd/backdrop.png`));
+
+          await merge(path.join(__dirname, `ttd/ttd.png`))
+          .resize(signWidth, signHeight)
+          .toFile(path.join(__dirname, 'ttd/ttd2.png'))
+
+          const top = (dimensions.height - (5 + qrHeight));
+          const left = (dimensions.width - (5 + qrWidth));
+          const pic1 = await merge(path.join(__dirname, `upload/file_surat/${track[i].target}`))
+          .overlayWith(path.join(__dirname, 'ttd/backdrop.png'), {
+            top : Math.round(dimensions.height / (100/track[i].y)),
+            left : Math.round(dimensions.width / (100/track[i].x + 2))
+          }).toBuffer();
+
+          const pic2 = await merge(pic1)
+          .overlayWith(path.join(__dirname, 'ttd/ttd2.png'), {
+            top : Math.round(dimensions.height / (100/track[i].y)),
+            left : Math.round(dimensions.width / (100/track[i].x))
+          }).toBuffer();
+          
+
+          await merge(pic2)
+          .overlayWith(path.join(__dirname, `qrcode/qrcode2.png`), {
+            top,
+            left
+          })
+          .jpeg({
+            quality : 100,
+            chromaSubsampling : '4:4:4'
+          })
+          .toFile(path.join(__dirname, `upload/approved_file/verified-${track[i].target}.jpeg`), (err, info) => {
+            if (err) console.log(`Error sharp : ${err}`);
+          });
+        } else {
+          await merge(img)
+          .jpeg({
+            quality : 100,
+            chromaSubsampling : '4:4:4'
+          })
+          .toFile(path.join(__dirname, `upload/approved_file/verified-${track[i].target}.jpeg`), (err, info) => {
+            if (err) console.log(`Error sharp : ${err}`);
+          });
+        }
+
+        await db.update('file_surat', { approved_file : `verified-${track[i].target}.jpeg`}, { file_surat : track[i].target }, (err, result) => {
+          if (err) return console.log(err);
+          
+          console.log(result);
+        });
       });
+    }
+    db.update('surat', approved_surat, {id}, (err, result) => {
+      if (err) return console.log(err);
+      
+      res.json(result);
     });
   });
   // res.send(qr);
@@ -370,12 +412,14 @@ app.get('/api/get_approved_surat/:id/:type/:page/:limit', (req, res) => {
   if (type == 'pimpinan') {
     db.where({'approved': 1}).get('surat', (err, result) => {
       total = (result) ? result.length : 0;
-      db.select('deskripsi, approved_file_surat, file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
+      db.select('deskripsi, file_surat.approved_file, file_surat.file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
       .join('users', 'user_id = users.id')
-      .like('subjek', q, 'both')
+      .join('file_surat', 'surat.id = file_surat.id_surat')
       .where({'approved': 1})
+      .like('subjek', q, 'both')
       .limit(parseInt(limit), offset)
       .order_by('surat.id', 'desc')
+      .group_by('surat.id')
       .get('surat', (err, result) => {
         if (err) throw err; 
         res.json({
@@ -388,12 +432,14 @@ app.get('/api/get_approved_surat/:id/:type/:page/:limit', (req, res) => {
     db.where({'user_id' : id , approved : 1}).get('surat', (err, result) => {
       total = (result) ? result.length : 0;
       if (err) console.log(err); 
-      db.select('deskripsi, approved_file_surat, file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
+      db.select('deskripsi, file_surat.approved_file, file_surat.file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
       .join('users', 'user_id = users.id')
+      .join('file_surat', 'surat.id = file_surat.id_surat')
       .like('subjek', q, 'both')
       .where({'user_id' : id , approved : 1})
       .limit(parseInt(limit), offset)
       .order_by('surat.id', 'desc')
+      .group_by('surat.id')
       .get('surat', (err, result) => {
         if (err) throw err;
         res.json({
@@ -413,12 +459,14 @@ app.get('/api/get_surat_pending/:id/:type/:page/:limit', (req, res) => {
   if (type == 'pimpinan') {
     db.where({'approved': 0}).get('surat', (err, result) => {
       total = (result) ? result.length : 0;      
-      db.select('deskripsi, approved_file_surat, file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
+      db.select('deskripsi, file_surat.approved_file, file_surat.file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
       .join('users', 'user_id = users.id')
+      .join('file_surat', 'surat.id = file_surat.id_surat')
       .like('subjek', q, 'both')
       .where({'approved': 0})
       .limit(parseInt(limit), offset)
       .order_by('surat.id', 'desc')
+      .group_by('surat.id')
       .get('surat', (err, result) => {
         if (err) throw err; 
         res.json({
@@ -428,14 +476,16 @@ app.get('/api/get_surat_pending/:id/:type/:page/:limit', (req, res) => {
       });
     });
   } else if (type === 'skpd') {
-    db.where({'user_id' : id , approved : 1}).get('surat', (err, result) => {
+    db.where({'user_id' : id , approved : 0}).get('surat', (err, result) => {
       total = (result) ? result.length : 0;
-      db.select('deskripsi, approved_file_surat, file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
+      db.select('deskripsi, file_surat.approved_file, file_surat.file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil')
       .join('users', 'user_id = users.id')
+      .join('file_surat', 'surat.id = file_surat.id_surat')
       .like('subjek', q, 'both')
       .where({'users.id' : id , approved : 0})      
       .limit(parseInt(limit), offset)
       .order_by('surat.id', 'desc')
+      .group_by('surat.id')
       .get('surat', (err, result) => {
         if (err) throw err;
         res.json({
