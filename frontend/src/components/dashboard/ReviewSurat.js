@@ -181,11 +181,11 @@ export default class ReviewSurat extends Component {
                       }
                       alt={img.file_surat}
                       onError={(err) => {
-                        const img = document.getElementById(`img${index}`);
-                        img.src = `${imgAPI}loading.png`;
+                        const image = document.getElementById(`img${index}`);
+                        image.src = `${imgAPI}file_surat/loading.png`;
                         $('#loading').fadeIn();
                         setTimeout(() => {
-                          img.src = (img.approved === 1) ? `${imgAPI}approved_file/${img.approved_file}` :
+                          image.src = (img.approved === 1) ? `${imgAPI}approved_file/${img.approved_file}` :
                           `${imgAPI}file_surat/${img.file_surat}`
                           $('#loading').fadeOut();
                         }, 5000);
