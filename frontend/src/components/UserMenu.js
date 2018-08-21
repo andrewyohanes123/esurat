@@ -48,9 +48,7 @@ export default class UserMenu extends Component {
             <Link to="/dashboard/profile" className="dropdown-item">
               <div className="row">
                 <div className="col-sm-3 pl-0 pr-0">
-                  <div className="profile-pic rounded-circle o-hidden">
-                    <img src={`${imgAPI}${auth_user.foto_profil}`} alt="" className="h-100"/>
-                  </div>
+                    <img src={`${imgAPI}foto_profil/${auth_user.foto_profil}`} alt="" className="w-100 rounded-circle"/>
                 </div>
                 <div className="col-sm-9">
                   <strong>{auth_user.username}</strong>

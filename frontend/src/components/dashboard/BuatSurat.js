@@ -17,7 +17,8 @@ export default class BuatSurat extends Component {
       skpd : JSON.parse(localStorage.getItem('auth')).skpd,
       user_id : JSON.parse(localStorage.getItem('auth')).id,
       tujuan : "",
-      deskripsi : ""
+      deskripsi : "",
+      upload_progress : 0
     };
 
     this.onChange = this.onChange.bind(this);
@@ -102,6 +103,21 @@ export default class BuatSurat extends Component {
         Req.post('/api/buat_surat', formData, {
           headers: {
             'x-access-token' : localStorage.getItem('x-access-token')
+          },
+          onUploadProgress : prog => {
+            let upload_progress = Math.round(prog.loaded / prog.total * 100);
+            if (upload_progress < 100)
+            {
+              this.setState({
+                upload_progress
+              });
+            }
+            else
+            {
+              this.setState({
+                upload_progress : 0
+              });
+            }
           }
         }).then((resp) => {
           if (resp.data.affectedRows) 
@@ -166,11 +182,14 @@ export default class BuatSurat extends Component {
                 </form>
               </div>
               <div className="col-md-6">
-                {/* <p><i className="fa fa-chevron-right fa-lg"></i>&nbsp;Preview surat</p>
-                <hr/>
-                <img src={
-                  encoded
-                } title="Preview" alt="" className="img-fluid"/> */}
+              { this.state.upload_progress > 0 &&
+                <React.Fragment>
+                  <div className="progress" style={{ height : 25 }} >
+                    <div className="progress-bar progress-bar-striped progress-bar-animated" style={{width : `${this.state.upload_progress}%`}}>{`${this.state.upload_progress}%`}</div>
+                  </div>
+                  <p className="text-center text-muted">Sedang mengupload</p>
+                </React.Fragment>
+              }
               </div>
             </div>
           </div>

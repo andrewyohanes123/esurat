@@ -143,7 +143,7 @@ export default class componentName extends Component {
                 </form>
               </div>
               <div className="col-md-6">
-                <img src={`${baseURL}/${foto_profil}`} alt="" onClick={() => {this.profilePic.click()}} className="img-fluid profile w-50 rounded img-thumbnail"/>
+                <img src={`${baseURL}/foto_profil/${foto_profil}`} alt="" onClick={() => {this.profilePic.click()}} className="img-fluid profile w-50 rounded img-thumbnail"/>
                 <input type="file" onChange={this.uploadFoto} style={{display : 'none'}} ref={(profilePic) => {this.profilePic = profilePic}} className="small w-50"/>
                 {
                   this.state.upload_progress > 0 &&

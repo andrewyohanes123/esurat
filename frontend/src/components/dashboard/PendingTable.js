@@ -22,7 +22,10 @@ export default class ApprovedTable extends Component {
               top : 10,
               zIndex : 200
             }} ><i className="fa fa-trash fa-sm"></i></button>}
-          <img src={
+          <img onLoad={() => {
+            console.log('test');
+          }}
+           src={
             (surat.approved === 0) ?
             `${imgAPI}file_surat/${surat.file_surat}` :
             `${imgAPI}${surat.approved_file_surat}`

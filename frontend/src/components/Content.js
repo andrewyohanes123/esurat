@@ -29,6 +29,16 @@ export default class Content extends Component {
         'x-access-token' : localStorage.getItem('x-access-token')
       }
     }).then((resp) => {
+      if (resp.data[0].approved && resp.data.length === 1) {
+        resp.data.push({
+          approved : 0, jumlah : 0
+        })
+      } else if (!resp.data[0].approved && resp.data.length === 1) {
+        resp.data.push({
+          approved : 0, jumlah : 0
+        })
+        resp.data.reverse();
+      }
       this.setState({
         jumlah_surat : resp.data
       });

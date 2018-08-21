@@ -10,7 +10,30 @@ export default class Pending extends Component {
     super(props);
 
     this.state = {
-      surat : [],
+      surat : [{
+        file_surat : 'loading.png',
+        nama_depan : "Please",
+        nama_belakang : "Wait",
+        subjek : "Loading",
+        tanggal : new Date(),
+        id : 1
+      },
+      {
+        file_surat : 'loading.png',
+        nama_depan : "Please",
+        nama_belakang : "Wait",
+        subjek : "Loading",
+        tanggal : new Date(),
+        id : 2
+      },
+      {
+        file_surat : 'loading.png',
+        nama_depan : "Please",
+        nama_belakang : "Wait",
+        subjek : "Loading",
+        tanggal : new Date(),
+        id : 3
+      }],
       limit : 12,
       current_page : 1,
       user : JSON.parse(localStorage.getItem('auth')),
@@ -88,6 +111,7 @@ export default class Pending extends Component {
   }
 
   render() {
+    document.title = "Surat | Surat pending"
     socket.emit('login', this.state.user);
     if (this.state.user.user_type === 'pimpinan') {
       socket.on('surat baru', (msg) => this.getSurat());
@@ -127,7 +151,7 @@ export default class Pending extends Component {
           </div>
           <div className="card-footer">
             <nav>
-              <ul className="pagination">
+              {/* <ul className="pagination">
                 <li className={
                   (current_page === 1 ) ?
                   'page-item disabled' : 'page-item'
@@ -157,7 +181,7 @@ export default class Pending extends Component {
                 }>
                   <span className="page-link"><i className="fa fa-chevron-right fa-lg"></i></span>
                 </li>
-              </ul>
+              </ul> */}
             </nav>
           </div>
         </div>

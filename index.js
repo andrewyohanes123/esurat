@@ -54,38 +54,14 @@ app.get('/', (req, res) => {
 });
 
 app.get('/test', async (req, res) => {  
-  const pic = path.join(__dirname, 'upload/8a0bf99db8e8eb49135fd9e684058fca.surat-tugas-visitasi-tahap-2.jpg');
-  const ttd = path.join(__dirname, 'ttd/ttd2.jpg');
-  const dim = await imgSize(pic);
-  const ttdSize = await imgSize(ttd);
-  const resizePic = await merge(pic)
-  .toBuffer()
+  const file = path.join(__dirname, 'upload/foto_profil/test.jpg');
+  const file2 = path.join(__dirname, 'upload/foto_profil/test2.png');
+  await merge(file)
+  .resize(400, 400)
+  .crop('center')
+  .toFile(file2);
 
-  const pic1 = await merge(resizePic)
-  .overlayWith(path.join(__dirname, 'ttd/backdrop.png'), {
-    top : 590,
-    left : 101
-  }).toBuffer();
-
-  const sign = await merge(ttd)
-  .resize(
-   Math.round(ttdSize.width / (100/21.5)),
-    Math.round(ttdSize.height / (100/21.5)))
-  .toBuffer();
-
-  const pic2 = await merge(pic1)
-  .overlayWith(sign, {
-    top : 590,
-    left : 101
-  })
-  .jpeg({
-    quality : 100,
-    chromaSubsampling : '4:4:4'
-  })
-  .toFile(path.join(__dirname, 'upload/tests2.jpeg'))
-  .then(info => {
-    res.sendFile(path.join(__dirname, 'upload/verified-8a0bf99db8e8eb49135fd9e684058fca.surat-tugas-visitasi-tahap-2.jpg.png'));
-  })
+  await res.sendFile(file2);
 });
 
 app.post('/api/login', function(req, res){
@@ -182,10 +158,13 @@ app.delete('/api/hapus_user/:id', (req, res) => {
   });
 });
 
-app.put('/api/update_profil', upload.single('foto_profil'), (req, res) => {
-  req.body.foto_profil = req.file.filename;
+app.put('/api/update_profil', profile.single('foto_profil'), async (req, res) => {
+  const file = path.join(__dirname, `upload/foto_profil/${req.file.filename}`);
+  const file2 = path.join(__dirname, `upload/foto_profil/${req.file.filename}.png`);
+  await merge(file).resize(400, 400).crop('center').toFile(file2);
+  req.body.foto_profil = req.file.filename + ".png";
   const {id} = req.body;
-  db.update('users', req.body, {id: id}, (err, result) => {
+  await db.update('users', req.body, {id: id}, (err, result) => {
     if (err) throw err;
     res.json(result);
   });
@@ -218,10 +197,13 @@ app.post('/api/buat_surat', upload.array('file_surat'), (req, res) => {
 
 app.delete('/api/hapus_surat/:id', (req, res) => {
   const {id} = req.params;
-  db.where('id', id).get('surat', (err, result) => {
+  db.where('id_surat', id).get('file_surat', (err, result) => {
+    if (err) console.log(err);
     if (result.length) {
-      fs.unlink(path.join(__dirname,`upload/${result[0].file_surat}`));
-      result[0].approved_file_surat !== null ? fs.unlink(path.join(__dirname,`upload/${result[0].approved_file_surat}`)) : '';
+      for (let i = 0; i < result.length; i++) {
+        fs.unlink(path.join(__dirname,`upload/file_surat/${result[i].file_surat}`));
+        result[i].approved_file !== null ? fs.unlink(path.join(__dirname,`upload/approved_file/${result[i].approved_file}`)) : '';
+      }
     }
   });
 
