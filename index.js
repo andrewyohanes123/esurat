@@ -44,8 +44,9 @@ const profile = multer({
   storage : profileStorage
 });
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended : true}));
+// app.use(app.bodyParser({limit : '50mb'}));
+app.use(bodyParser.json({limit: '1024mb'}));
+app.use(bodyParser.urlencoded({extended : true, limit: '1024mb'}));
 app.use(cors());
 app.use('/api/images/', express.static('upload'));
 
@@ -124,6 +125,63 @@ app.put('/api/update_user', (req, res)=> {
   });
 });
 
+app.get('/api/cek_jlh_surat_approved/:type/:id', (req, res) => {
+  if (req.params.type === 'pimpinan')
+  {
+    db.where({'approved': 1,}).get('surat', (err, result) => {
+      if (err) console.log(err);
+  
+      if (result) res.json({ jumlah : result.length });
+    });
+  }
+  else if (req.params.type === 'skpd')
+  {
+    db.where({'approved': 1,user_id : req.params.id}).get('surat', (err, result) => {
+      if (err) console.log(err);
+  
+      if (result) res.json({ jumlah : result.length });
+    });
+  }
+});
+
+app.get('/api/cek_jlh_surat_blm_approved/:type/:id', (req, res) => {
+  if (req.params.type === 'pimpinan')
+  {
+    db.where({'approved': 0, ditolak : 0}).get('surat', (err, result) => {
+      if (err) console.log(err);
+  
+      if (result) res.json({ jumlah : result.length });
+    });
+  }
+  else if (req.params.type === 'skpd')
+  {
+    db.where({'approved': 0, ditolak : 0, user_id : req.params.id}).get('surat', (err, result) => {
+      if (err) console.log(err);
+  
+      if (result) res.json({ jumlah : result.length });
+    });
+  }
+});
+
+app.get('/api/cek_jlh_surat_ditolak/:type/:id', (req, res) => {
+  if (req.params.type === 'pimpinan')
+  {
+    db.where({ditolak : 1}).get('surat', (err, result) => {
+      if (err) console.log(err);
+  
+      if (result) res.json({ jumlah : result.length });
+    });
+  }
+  else if (req.params.type === 'skpd')
+  {
+    db.where({ditolak : 1, user_id : req.params.id}).get('surat', (err, result) => {
+      if (err) console.log(err);
+  
+      if (result) res.json({ jumlah : result.length, result });
+    });
+  }
+});
+
 app.post('/api/buat_user/', (req, res) => {
   req.body.password = crypto.createHash('md5').update(req.body.password).digest('hex');
   db.insert('users', req.body, (err, result) => {
@@ -174,7 +232,7 @@ app.post('/api/buat_surat', upload.array('file_surat'), (req, res) => {
   // req.body.file_surat = req.files;
   // res.json(req.files);
   req.body.approved = 0;
-  req.body.approved_by = 0;
+  req.body.action_by = 0;
   req.body.dibaca = 0;
 
   db.insert('surat', req.body, (err, result) => {
@@ -234,9 +292,10 @@ app.get('/api/cek_notifikasi', (req, res) => {
 });
 
 app.get('/api/cek_notifikasi_skpd/:id', (req, res) => {
-  db.select('subjek, surat.id, tanggal, tanggal_approved,users.nama_depan, users.nama_belakang, approved_by')
-  .join('users', 'approved_by = users.id')
-  .where({'approved' : 1, 'surat.user_id' : req.params.id})
+  db.select('subjek, ditolak, ditolak_by, surat.id, tanggal, tanggal_approved,users.nama_depan, users.nama_belakang, action_by')
+  .join('users', 'action_by = users.id')
+  .where({'user_id' : req.params.id, approved : 1})
+  .or_where({ditolak : 1,})
   .limit(5)
   .order_by('surat.id', 'desc')
   .get('surat', (err, result) => {
@@ -250,7 +309,7 @@ app.get('/api/jumlah_surat/:type/:id', (req, res) => {
   const {type, id} = req.params;
   if (type === 'pimpinan')
   {
-    db.query(`select approved, count(id) as jumlah from surat group by approved`, (err, result) => {
+    db.query(`select approved, ditolak, count(id) as jumlah from surat group by approved`, (err, result) => {
       if (err) console.log(`Jumlah surat error : ${err}`);
       (result) ? res.json(result) : res.json([
         { jumlah : 0, approved : 0},
@@ -281,7 +340,7 @@ app.get('/api/get_profile/:id', (req, res) => {
 });
 
 app.get('/api/get_surat_by_id/:id', (req, res) => {
-  db.select('nomor_surat, deskripsi, file_surat.approved_file, file_surat.file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.username, users.nama_depan, users.nama_belakang, users.foto_profil')
+  db.select('nomor_surat, ditolak, ditolak_by, deskripsi_penolakan,deskripsi, file_surat.approved_file, file_surat.file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.username, users.nama_depan, users.nama_belakang, users.foto_profil, file_surat.id as id_file')
   .join('users', 'surat.user_id = users.id')
   .join('file_surat', 'surat.id = file_surat.id_surat')
   .where({'surat.id' : req.params.id})
@@ -292,9 +351,28 @@ app.get('/api/get_surat_by_id/:id', (req, res) => {
   });
 });
 
+app.post('/api/simpan_gambar', (req, res) => {
+  const {data, imageName} = req.body;
+  const buffer = Buffer.from(data.split(',')[1] , 'base64');
+  merge(buffer)
+  .jpeg({
+    quality : 100,
+    chromaSubsampling : '4:4:4'
+  })
+  .toFile(path.join(__dirname, `upload/file_surat/${path.basename(imageName)}.jpeg`), (err, info) => {
+    if (err) console.log(`Error sharp : ${err}`);
+  });  
+  db.update('file_surat', {file_surat : `${path.basename(imageName)}.jpeg`}, {file_surat : imageName}, (err, result) => {
+    res.json({
+      msg : buffer,
+      result
+    });
+  });
+});
+
 app.post('/api/approve_surat/', (req, res) => {
   // let qr = '';
-  const {subjek,id, approved_by, track} = req.body;
+  const {subjek,id, action_by, track} = req.body;
   // const pic = path.join(__dirname, `upload/${file_surat}`);
   
   qrcode.toFile(path.join(__dirname, `qrcode/qrcode.png`), id + '',{
@@ -308,7 +386,7 @@ app.post('/api/approve_surat/', (req, res) => {
     const approved_surat = {
       approved : 1,
       dibaca : 1,
-      approved_by,
+      action_by,
       tanggal_approved
     };
     for (let i = 0; i < track.length; i++) {
@@ -387,6 +465,23 @@ app.post('/api/approve_surat/', (req, res) => {
     });
   });
   // res.send(qr);
+});
+
+app.put('/api/tolak_surat/:id', (req, res) => {
+  const {deskripsi_penolakan, ditolak_by} = req.body;
+  const tanggal_approved = `${date.split('T')[0]} ${date.split('T')[1].split('.')[0]}`;
+  db.update('surat', {
+    deskripsi_penolakan,
+    action_by : ditolak_by,
+    ditolak : 1,
+    tanggal_approved
+  }, {id : req.params.id}, (err, result) => {
+    if (err) console.log(err);
+    res.json({
+      msg : 'success',
+      result
+    });
+  });
 });
 
 app.get('/api/get_approved_surat/:id/:type/:page/:limit', (req, res) => {
@@ -482,6 +577,53 @@ app.get('/api/get_surat_pending/:id/:type/:page/:limit', (req, res) => {
   }
 });
 
+app.get('/api/get_surat_ditolak/:id/:type/:page/:limit', (req, res) => {
+  const {page, type, limit, id} = req.params;
+  const {q} = req.query;
+  let total = 1;
+  let offset = (parseInt(page) - 1) *  (parseInt(limit));
+  if (type == 'pimpinan') {
+    db.where({'ditolak': 1}).get('surat', (err, result) => {
+      total = (result) ? result.length : 0;      
+      db.select('deskripsi, file_surat.approved_file, file_surat.file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, surat.ditolak, surat.ditolak_by,tanggal, users.nama_depan, users.nama_belakang, users.foto_profil, ditolak')
+      .join('users', 'user_id = users.id')
+      .join('file_surat', 'surat.id = file_surat.id_surat')      
+      .where({'ditolak': 1})
+      .like('subjek', q, 'both')
+      .limit(parseInt(limit), offset)
+      .order_by('surat.id', 'desc')
+      .group_by('surat.id')
+      .get('surat', (err, result) => {
+        if (err) throw err; 
+        res.json({
+          data : result,
+          total_halaman : Math.ceil(total/parseInt(limit))
+        });
+      });
+    });
+  } else if (type === 'skpd') {
+    db.where({'user_id' : id , ditolak : 1}).get('surat', (err, result) => {
+      total = (result) ? result.length : 0;
+      db.select('deskripsi, file_surat.approved_file, file_surat.file_surat, tujuan, surat.skpd, approved, dibaca, subjek, surat.id, tanggal, users.nama_depan, users.nama_belakang, users.foto_profil, ditolak')
+      .join('users', 'surat.action_by = users.id')
+      .join('file_surat', 'surat.id = file_surat.id_surat')      
+      .where({'user_id' : id , 'surat.ditolak' : 1, 'surat.approved' : 0})  
+      .like('surat.subjek', q, 'both')
+      .limit(parseInt(limit), offset)
+      .order_by('surat.id', 'desc')
+      .group_by('surat.id')
+      .get('surat', (err, result) => {
+        if (err) throw err;
+        res.json({
+          data : result,
+          total_halaman : Math.ceil(total/parseInt(limit)),
+          params : req.params
+        });
+      });
+    });
+  }
+});
+
 app.put('/api/update_baca_surat/:id', (req, res) => {
   const {id} = req.params;
   db
@@ -507,6 +649,11 @@ io.on('connection', (socket) => {
 
   socket.on('baca surat', (data) => {
     socket.broadcast.emit('baca surat', (data));
+  });
+
+  socket.on('tolak surat', (data) => {
+    const {username} = data.surat;
+    socket.to(username + '').emit('tolak surat', data);
   });
 
   socket.on('login', (user) => {

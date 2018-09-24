@@ -12,6 +12,7 @@ import BuatSurat from './components/dashboard/BuatSurat';
 import ReviewSurat from './components/dashboard/ReviewSurat';
 import ScanQrcode from './components/dashboard/ScanQrcode';
 import Users from './components/dashboard/Users';
+import Ditolak from './components/dashboard/Ditolak';
 
 import Popper from 'popper.js';
 import 'bootstrap/dist/js/bootstrap.bundle';
@@ -162,6 +163,18 @@ class App extends Component {
                     </Sidebar>                    
                   </Dashboard>
                 ) : (<Redirect to="/dashboard" />)
+              }
+            } />
+            <Route path="/dashboard/surat/ditolak" exact render={
+              () => {
+                const user = JSON.parse(localStorage.getItem('auth'));
+                return (
+                  <Dashboard>
+                    <Sidebar user={user}>
+                      <Ditolak />
+                    </Sidebar>                    
+                  </Dashboard>
+                )
               }
             } />
           </Switch>

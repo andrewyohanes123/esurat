@@ -3,7 +3,7 @@ import moment from 'moment';
 import UserMenu from './UserMenu';
 import NotificationSKPD from './NotificationSKPD';
 import Notification from './Notification';
-import {NavLink} from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import socket from '../modules/socket';
 import Req from '../modules/Req';
 import $ from 'jquery';
@@ -11,40 +11,38 @@ import $ from 'jquery';
 window.jQuery = $;
 window.$ = $;
 
-export default class Sidebar extends Component {  
+export default class Sidebar extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      auth : JSON.parse(localStorage.getItem('auth')),
-      notif : [],
-      notifSKPD : [],
-      notification : {
-        nama_depan : "",
-        nama_belakang : ""
+      auth: JSON.parse(localStorage.getItem('auth')),
+      notif: [],
+      notifSKPD: [],
+      notification: {
+        nama_depan: "",
+        nama_belakang: ""
       }
     }
     this.notifCheck = this.notifCheck.bind(this);
   }
-  componentWillMount () {
-    const {nama_depan, nama_belakang} = this.state.auth
+  componentWillMount() {
+    const { nama_depan, nama_belakang } = this.state.auth
     document.title = nama_depan + " " + nama_belakang;
   }
 
   componentWillMount() {
-    if (this.state.auth.user_type === 'pimpinan')
-    {
+    if (this.state.auth.user_type === 'pimpinan') {
       this.notifCheck();
     }
-    else if (this.state.auth.user_type === 'skpd')
-    {
+    else if (this.state.auth.user_type === 'skpd') {
       this.notifSKPD();
     }
   }
 
   notifCheck = () => {
     Req.get('/api/cek_notifikasi', {
-      headers : {
-        'x-access-token' : localStorage.getItem('x-access-token')
+      headers: {
+        'x-access-token': localStorage.getItem('x-access-token')
       }
     }).then((resp) => {
       const notif = resp.data
@@ -53,10 +51,10 @@ export default class Sidebar extends Component {
   }
 
   notifSKPD = () => {
-    const {id} = this.state.auth;
+    const { id } = this.state.auth;
     Req.get(`/api/cek_notifikasi_skpd/${id}`, {
-      headers : {
-        'x-access-token' : localStorage.getItem('x-access-token')
+      headers: {
+        'x-access-token': localStorage.getItem('x-access-token')
       }
     }).then((resp) => {
       const notifSKPD = resp.data;
@@ -66,49 +64,58 @@ export default class Sidebar extends Component {
 
 
 
-  render() {    
-    const {skpd, user_type} = this.state.auth;
-    const {notification} = this.state;
+  render() {
+    const { skpd, user_type } = this.state.auth;
+    const { notification } = this.state;
     let user = {
-      nama_depan : "",
-      nama_belakang : ""
+      nama_depan: "",
+      nama_belakang: ""
     };
     socket.emit('login', this.state.auth);
     socket.on('surat baru', (msg) => {
       user = msg;
-      this.setState({ notification : msg });
-      $('.notif').css('display', 'flex');
+      this.setState({ notification: msg });
+      $('#notifPimpinan').css('display', 'flex');
       setTimeout(() => {
-        $('.notif').fadeOut();
+        $('#notifPimpinan').fadeOut();
       }, 4000);
       this.notifCheck();
     });
     socket.on('approve surat', (msg) => {
       user = msg;
-      this.setState({ notification : msg.approved_by });
+      this.setState({ notification: msg.action_by });
       this.notifSKPD();
-      $('.notif').css('display', 'flex');
+      $('#notifSKPD').css('display', 'flex');
       setTimeout(() => {
-        $('.notif').fadeOut();
+        $('#notifSKPD').fadeOut();
+      }, 4000);
+    });
+    socket.on('tolak surat', (msg) => {
+      user = msg;
+      this.setState({ notification: msg.action_by });
+      this.notifSKPD();
+      $('#notifSKPDTolak').css('display', 'flex');
+      setTimeout(() => {
+        $('#notifSKPDTolak').fadeOut();
       }, 4000);
     });
     return (
       <Fragment>
-        <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">        
+        <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">
           <a href="javascript:void(0)" className="navbar-brand">eSurat</a>
           <button className="navbar-toggler" data-toggle="collapse" data-target="#navbar">
             <span className="navbar-toggler-icon"></span>
           </button>
           <div className="collapse navbar-collapse" id="navbar">
             <ul className="navbar-nav ml-auto">
-              { user_type === 'pimpinan' &&
+              {user_type === 'pimpinan' &&
                 <Fragment>
-                  <Notification notifCheck={this.notifCheck} notif={this.state.notif}/>
+                  <Notification notifCheck={this.notifCheck} notif={this.state.notif} />
                 </Fragment>
               }
               {
                 user_type === 'skpd' &&
-                <Fragment> 
+                <Fragment>
                   <NotificationSKPD notif={this.state.notifSKPD} />
                 </Fragment>
               }
@@ -122,10 +129,10 @@ export default class Sidebar extends Component {
                 </NavLink>
               </li>}
               {skpd !== null && user_type !== 'admin' &&
-                (<li className="nav-item">              
-                <NavLink exact className="nav-link" to="/dashboard/surat/buat">
-                  <i className="fa fa-envelope-o fa-lg"></i>&nbsp;
-                  Buat surat
+                (<li className="nav-item">
+                  <NavLink exact className="nav-link" to="/dashboard/surat/buat">
+                    <i className="fa fa-envelope-o fa-lg"></i>&nbsp;
+                    Buat surat
                 </NavLink>
                 </li>)
               }
@@ -136,9 +143,10 @@ export default class Sidebar extends Component {
                 <ul className="sidenav-second-level collapse" id="surat">
                   <li><NavLink to="/dashboard/surat/approved"><i className="fa fa-check-square fa-sm"></i>&nbsp;Approve</NavLink></li>
                   <li><NavLink to="/dashboard/surat/pending"><i className="fa fa-times fa-sm"></i>&nbsp;Pending</NavLink></li>
+                  <li><NavLink to="/dashboard/surat/ditolak" ><i className="fa fa-ban fa-lg"></i>&nbsp;Ditolak</NavLink></li>
                 </ul>
               </li>}
-              { user_type === 'admin' && 
+              {user_type === 'admin' &&
                 <li className="nav-item">
                   <NavLink className="nav-link" to="/dashboard/users">
                     <i className="fa fa-user-circle-o fa-lg"></i>&nbsp;Users
@@ -148,23 +156,29 @@ export default class Sidebar extends Component {
             </ul>
           </div>
         </nav>
-        { (user_type === 'pimpinan') ?
-          <div className="notif">
+        {(user_type === 'pimpinan') ?
+          <div id="notifPimpinan" className="notif">
             <div className="notif-icon"><i className="fa fa-bell"></i></div>
             <div className="notif-body">{notification.nama_depan} {notification.nama_belakang} mengirim surat baru</div>
           </div>
           :
-          <div className="notif">
-            <div className="notif-icon"><i className="fa fa-bell"></i></div>
-            <div className="notif-body">{notification.nama_depan} {notification.nama_belakang} menerima surat {notification.nomor_surat}</div>
-        </div>
+          <Fragment>
+            <div id="notifSKPD" className="notif">
+              <div className="notif-icon"><i className="fa fa-bell"></i></div>
+              <div className="notif-body">{notification.nama_depan} {notification.nama_belakang} menerima surat {notification.nomor_surat}</div>
+            </div>
+            <div id="notifSKPDtolak" className="notif">
+              <div className="notif-icon"><i className="fa fa-bell"></i></div>
+              <div className="notif-body">{notification.nama_depan} {notification.nama_belakang} menolak surat {notification.nomor_surat}</div>
+            </div>
+          </Fragment>
         }
         <div className="content-wrapper">
-          {this.props.children}          
+          {this.props.children}
         </div>
         <footer className="sticky-footer">
           <div className="container">
-            <div className="text-center"><small>Copyright &copy; Andrew Yohanes { moment().format("YYYY") }</small></div>
+            <div className="text-center"><small>Copyright &copy; Andrew Yohanes {moment().format("YYYY")}</small></div>
           </div>
         </footer>
       </Fragment>

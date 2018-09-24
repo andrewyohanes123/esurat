@@ -15,13 +15,14 @@ export default class NotificationSKPD extends Component {
 
   render() {
     socket.emit('login', JSON.parse(localStorage.getItem('auth')));
-    socket.on('approve surat', (data) => {
+    socket.on('tolak surat', (data) => {
       this.setState({ notif_baru : true });
     });
+    let action = 'menerima';
     const notifs = this.props.notif.map((item, index) =>
       <React.Fragment key={item.id}>
         <Link to={`/dashboard/surat/review/${item.id}`} className="dropdown-item">
-          <strong>{item.nama_depan} {item.nama_belakang} menerima surat</strong>
+          <strong>{item.nama_depan} {item.nama_belakang} {(item.ditolak === 1) ? 'menolak' : 'menerima'} surat</strong>
           <span className="float-right small text-muted">{ moment(item.tanggal_approved).format('DD MMM YYYY') }</span>
           <div className="dropdown-message small">{item.subjek}</div>
         </Link>

@@ -13,13 +13,22 @@ export default class Content extends Component {
         { jumlah : 0, approved : 0},
         { jumlah : 0, approved : 1},
       ],
-      chart : {}
+      chart : {},
+      approved : 0,
+      pending : 0,
+      ditolak : 0
     };
-    this.getJlhSurat = this.getJlhSurat.bind(this);
+    // this.getJlhSurat = this.getJlhSurat.bind(this);
+    this.getJlhApproved = this.getJlhApproved.bind(this);
+    this.getJlhPending = this.getJlhPending.bind(this);
+    this.getJlhDitolak = this.getJlhDitolak.bind(this);
   }
 
   componentDidMount = () => {
-    this.getJlhSurat();
+    // this.getJlhSurat();
+    this.getJlhApproved();
+    this.getJlhDitolak();
+    this.getJlhPending();
   }
 
   getJlhSurat = () => {
@@ -45,6 +54,33 @@ export default class Content extends Component {
     });
   }
 
+  getJlhApproved = () => {
+    const user = JSON.parse(localStorage.getItem('auth'));
+    Req.get(`/api/cek_jlh_surat_approved/${user.user_type}/${user.id}`).then(resp => {
+      this.setState({
+        approved : resp.data.jumlah
+      });
+    });
+  }
+
+  getJlhPending = () => {
+    const user = JSON.parse(localStorage.getItem('auth'));
+    Req.get(`/api/cek_jlh_surat_blm_approved/${user.user_type}/${user.id}`).then(resp => {
+      this.setState({
+        pending : resp.data.jumlah
+      });
+    });
+  }
+
+  getJlhDitolak = () => {
+    const user = JSON.parse(localStorage.getItem('auth'));
+    Req.get(`/api/cek_jlh_surat_ditolak/${user.user_type}/${user.id}`).then(resp => {
+      this.setState({
+        ditolak : resp.data.jumlah
+      });
+    });
+  }
+
   render() {
     document.title = "Dashboard";
     const {jumlah_surat} = this.state;
@@ -59,7 +95,7 @@ export default class Content extends Component {
             <div className="col-md-3 mb-2">
               <div className="card text-white bg-primary h-100 o-hidden">
               <div className="card-body">
-                <div className="mr-5 z-4">{ (!jumlah_surat[1]) ? 0 : jumlah_surat[1].jumlah } surat yang terapprove</div>
+                <div className="mr-5 z-4">{ this.state.approved } surat yang terapprove</div>
                 <div className="card-body-icon"><i className="fa fa-check-square fa-lg"></i></div>
                 </div>
                 <div className="card-footer">
@@ -72,9 +108,9 @@ export default class Content extends Component {
             </div>
             {/*  */}
             <div className="col-md-3 mb-2">
-              <div className="card text-white bg-danger h-100 o-hidden">
+              <div className="card text-white bg-warning h-100 o-hidden">
                 <div className="card-body">
-                  <div className="mr-5 z-4">{ (!jumlah_surat[0]) ? 0 : jumlah_surat[0].jumlah } surat pending</div>
+                  <div className="mr-5 z-4">{ this.state.pending } surat pending</div>
                   <div className="card-body-icon"><i className="fa fa-times fa-lg"></i></div>
                 </div>
                 <div className="card-footer">
@@ -86,8 +122,23 @@ export default class Content extends Component {
               </div>
               {/*  */}
             </div>
+            <div className="col-md-3 mb-2">
+              <div className="card text-white bg-danger h-100 o-hidden">
+                <div className="card-body">
+                  <div className="mr-5 z-4">{ this.state.ditolak } surat yang ditolak</div>
+                  <div className="card-body-icon"><i className="fa fa-ban fa-lg"></i></div>
+                </div>
+                <div className="card-footer">
+                <Link to="/dashboard/surat/ditolak" className="small text-white">
+                  <i className="fa fa-chevron-right fa-lg"></i>&nbsp;
+                  Detail
+                </Link>
+                </div>
+              </div>
+              {/*  */}
+            </div>
             {/*  */}
-            <div className="col-md-6">
+            <div className="col-md-4">
               
             </div>
           </div>

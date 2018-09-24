@@ -1,5 +1,5 @@
 textarea {
-  resize: none;
+  resize: none !important;
 }
 
 .disabled {
@@ -13,6 +13,11 @@ textarea {
 div.card-img-overlay {
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent);
 }
+
+/* .form-control:focus, .form-control:active {
+  border-color: #ff3838 !important;
+  box-shadow: 0 0 0 0.2rem rgba(255, 56, 56, 0.25) !important;
+} */
 
 div.notif {
   background : white;
@@ -63,6 +68,12 @@ div.loading p {
 div.profile-pic {
   width : 35px;
   height: 35px;
+}
+
+button.edit-btn {
+  position: absolute;
+  right : 15px;
+  top : 15px;
 }
 
 @media (min-width : 1200px) and (max-width : 1920px) {
